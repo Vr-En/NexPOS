@@ -1,0 +1,58 @@
+﻿<?xml version="1.0" encoding="utf-8"?><Database Name="NexPOS" Class="NexPOSDataDataContext" xmlns="http://schemas.microsoft.com/linqtosql/dbml/2007">
+  <Connection Mode="AppSettings" ConnectionString="Data Source=DAREN-VIEN29\SQLEXPRESS;Initial Catalog=NexPOS;Integrated Security=True;Connect Timeout=30;Encrypt=True;Trust Server Certificate=True" SettingsObjectName="NexPOS.Properties.Settings" SettingsPropertyName="NexPOSConnectionString" Provider="System.Data.SqlClient" />
+  <Table Name="dbo.tbl_Categories" Member="tbl_Categories">
+    <Type Name="tbl_Category">
+      <Column Name="CategoryID" Type="System.Int32" DbType="Int NOT NULL IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="CategoryName" Type="System.String" DbType="NVarChar(100) NOT NULL" CanBeNull="false" />
+      <Association Name="tbl_Category_tbl_Product" Member="tbl_Products" ThisKey="CategoryID" OtherKey="CategoryID" Type="tbl_Product" />
+    </Type>
+  </Table>
+  <Table Name="dbo.tbl_Products" Member="tbl_Products">
+    <Type Name="tbl_Product">
+      <Column Name="ProductID" Type="System.Int32" DbType="Int NOT NULL IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="ProductCode" Type="System.String" DbType="NVarChar(50) NOT NULL" CanBeNull="false" />
+      <Column Name="ProductName" Type="System.String" DbType="NVarChar(100) NOT NULL" CanBeNull="false" />
+      <Column Name="CategoryID" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="UnitPrice" Type="System.Decimal" DbType="Decimal(10,2) NOT NULL" CanBeNull="false" />
+      <Column Name="StockQuantity" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="ExpirationDate" Type="System.DateTime" DbType="Date" CanBeNull="true" />
+      <Column Name="ReorderLevel" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="Status" Type="System.String" DbType="NVarChar(20) NOT NULL" CanBeNull="false" />
+      <Association Name="tbl_Product_tbl_Transactions_Item" Member="tbl_Transactions_Items" ThisKey="ProductID" OtherKey="ProductID" Type="tbl_Transactions_Item" />
+      <Association Name="tbl_Category_tbl_Product" Member="tbl_Category" ThisKey="CategoryID" OtherKey="CategoryID" Type="tbl_Category" IsForeignKey="true" />
+    </Type>
+  </Table>
+  <Table Name="dbo.tbl_Transactions" Member="tbl_Transactions">
+    <Type Name="tbl_Transaction">
+      <Column Name="TransactionID" Type="System.Int32" DbType="Int NOT NULL IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="TransactionDate" Type="System.DateTime" DbType="DateTime NOT NULL" CanBeNull="false" />
+      <Column Name="CashierID" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="TotalAmount" Type="System.Decimal" DbType="Decimal(10,2) NOT NULL" CanBeNull="false" />
+      <Column Name="PaymentAmount" Type="System.Decimal" DbType="Decimal(10,2) NOT NULL" CanBeNull="false" />
+      <Column Name="ChangeAmount" Type="System.Decimal" DbType="Decimal(10,2) NOT NULL" CanBeNull="false" />
+      <Association Name="tbl_Transaction_tbl_Transactions_Item" Member="tbl_Transactions_Items" ThisKey="TransactionID" OtherKey="TransactionID" Type="tbl_Transactions_Item" />
+      <Association Name="tbl_User_tbl_Transaction" Member="tbl_User" ThisKey="CashierID" OtherKey="UserID" Type="tbl_User" IsForeignKey="true" />
+    </Type>
+  </Table>
+  <Table Name="dbo.tbl_Transactions_Items" Member="tbl_Transactions_Items">
+    <Type Name="tbl_Transactions_Item">
+      <Column Name="TransactionItemID" Type="System.Int32" DbType="Int NOT NULL IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="TransactionID" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="ProductID" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="Quantity" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="UnitPrice" Type="System.Decimal" DbType="Decimal(10,2) NOT NULL" CanBeNull="false" />
+      <Column Name="Subtotal" Type="System.Decimal" DbType="Decimal(10,2) NOT NULL" CanBeNull="false" />
+      <Association Name="tbl_Product_tbl_Transactions_Item" Member="tbl_Product" ThisKey="ProductID" OtherKey="ProductID" Type="tbl_Product" IsForeignKey="true" />
+      <Association Name="tbl_Transaction_tbl_Transactions_Item" Member="tbl_Transaction" ThisKey="TransactionID" OtherKey="TransactionID" Type="tbl_Transaction" IsForeignKey="true" />
+    </Type>
+  </Table>
+  <Table Name="dbo.tbl_Users" Member="tbl_Users">
+    <Type Name="tbl_User">
+      <Column Name="UserID" Type="System.Int32" DbType="Int NOT NULL IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="FullName" Type="System.String" DbType="NVarChar(100) NOT NULL" CanBeNull="false" />
+      <Column Name="Username" Type="System.String" DbType="NVarChar(50) NOT NULL" CanBeNull="false" />
+      <Column Name="Password" Type="System.String" DbType="NVarChar(100) NOT NULL" CanBeNull="false" />
+      <Association Name="tbl_User_tbl_Transaction" Member="tbl_Transactions" ThisKey="UserID" OtherKey="CashierID" Type="tbl_Transaction" />
+    </Type>
+  </Table>
+</Database>

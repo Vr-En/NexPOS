@@ -1,0 +1,412 @@
+﻿using System;
+using System.Linq;
+using System.Windows;
+using System.Windows.Controls;
+
+namespace NexPOS
+{
+    public partial class InventoryPage : UserControl
+    {
+        private int editingProductID = 0;
+
+        public InventoryPage()
+        {
+            InitializeComponent();
+
+            LoadFilters();
+            RefreshInventory();
+        }
+
+        private void LoadFilters()
+        {
+            cmbCategory.Items.Clear();
+            cmbCategory.Items.Add("All Categories");
+
+            using (NexPOSDataDataContext db = new NexPOSDataDataContext())
+            {
+                var categories = db.tbl_Categories
+                    .OrderBy(c => c.CategoryName)
+                    .ToList();
+
+                foreach (var category in categories)
+                {
+                    cmbCategory.Items.Add(category.CategoryName);
+                }
+            }
+
+            cmbCategory.SelectedIndex = 0;
+
+            cmbStatus.Items.Clear();
+            cmbStatus.Items.Add("All Status");
+            cmbStatus.Items.Add("Active");
+            cmbStatus.Items.Add("Inactive");
+            cmbStatus.SelectedIndex = 0;
+        }
+
+        private void LoadProductCategoryCombo()
+        {
+            cmbProductCategory.Items.Clear();
+
+            using (NexPOSDataDataContext db = new NexPOSDataDataContext())
+            {
+                var categories = db.tbl_Categories
+                    .OrderBy(c => c.CategoryName)
+                    .ToList();
+
+                foreach (var category in categories)
+                {
+                    cmbProductCategory.Items.Add(new CategoryComboItem
+                    {
+                        CategoryID = category.CategoryID,
+                        CategoryName = category.CategoryName
+                    });
+                }
+            }
+
+            if (cmbProductCategory.Items.Count > 0)
+            {
+                cmbProductCategory.SelectedIndex = 0;
+            }
+        }
+
+        private void RefreshInventory()
+        {
+            string search = "";
+
+            if (txtSearch != null)
+            {
+                search = txtSearch.Text.ToLower();
+            }
+
+            string selectedCategory = "All Categories";
+
+            if (cmbCategory != null && cmbCategory.SelectedItem != null)
+            {
+                selectedCategory = cmbCategory.SelectedItem.ToString();
+            }
+
+            string selectedStatus = "All Status";
+
+            if (cmbStatus != null && cmbStatus.SelectedItem != null)
+            {
+                selectedStatus = cmbStatus.SelectedItem.ToString();
+            }
+
+            using (NexPOSDataDataContext db = new NexPOSDataDataContext())
+            {
+                var products = db.tbl_Products
+                    .Join(
+                        db.tbl_Categories,
+                        product => product.CategoryID,
+                        category => category.CategoryID,
+                        (product, category) => new InventoryProductRow
+                        {
+                            ProductID = product.ProductID,
+                            ProductCode = product.ProductCode,
+                            ProductName = product.ProductName,
+                            CategoryID = product.CategoryID,
+                            CategoryName = category.CategoryName,
+                            UnitPrice = product.UnitPrice,
+                            StockQuantity = product.StockQuantity,
+                            ExpirationDate = product.ExpirationDate,
+                            ReorderLevel = product.ReorderLevel,
+                            Status = product.Status
+                        }
+                    )
+                    .ToList();
+
+                var filteredProducts = products.Where(product =>
+                    (product.ProductCode.ToLower().Contains(search) ||
+                     product.ProductName.ToLower().Contains(search)) &&
+
+                    (selectedCategory == "All Categories" ||
+                     product.CategoryName == selectedCategory) &&
+
+                    (selectedStatus == "All Status" ||
+                     product.Status == selectedStatus)
+                ).ToList();
+
+                gridProducts.ItemsSource = null;
+                gridProducts.ItemsSource = filteredProducts;
+
+                int totalProducts = products.Count;
+                int activeProducts = products.Count(p => p.Status == "Active");
+                int lowStockProducts = products.Count(p => p.StockQuantity <= p.ReorderLevel && p.StockQuantity > 0);
+                int outOfStockProducts = products.Count(p => p.StockQuantity == 0);
+
+                txtSubtitle.Text = totalProducts + " products total · " + lowStockProducts + " low stock alerts";
+                txtTotalProducts.Text = totalProducts.ToString();
+                txtActiveProducts.Text = activeProducts.ToString();
+                txtLowStock.Text = lowStockProducts.ToString();
+                txtOutOfStock.Text = outOfStockProducts.ToString();
+            }
+        }
+
+        private void Filter_Changed(object sender, EventArgs e)
+        {
+            if (gridProducts != null)
+            {
+                RefreshInventory();
+            }
+        }
+
+        private void ShowAddProduct_Click(object sender, RoutedEventArgs e)
+        {
+            editingProductID = 0;
+
+            txtModalTitle.Text = "Add New Product";
+            btnSaveProduct.Content = "Add Product";
+
+            txtProductCode.Text = "";
+            txtProductName.Text = "";
+            txtUnitPrice.Text = "";
+            txtStockQty.Text = "";
+            txtReorderLevel.Text = "10";
+            dpExpirationDate.SelectedDate = DateTime.Today;
+            cmbProductStatus.SelectedIndex = 0;
+
+            LoadProductCategoryCombo();
+
+            ProductOverlay.Visibility = Visibility.Visible;
+        }
+
+        private void EditProduct_Click(object sender, RoutedEventArgs e)
+        {
+            Button button = sender as Button;
+
+            if (button == null)
+            {
+                return;
+            }
+
+            InventoryProductRow selectedProduct = button.DataContext as InventoryProductRow;
+
+            if (selectedProduct == null)
+            {
+                return;
+            }
+
+            editingProductID = selectedProduct.ProductID;
+
+            txtModalTitle.Text = "Edit Product";
+            btnSaveProduct.Content = "Update Product";
+
+            txtProductCode.Text = selectedProduct.ProductCode;
+            txtProductName.Text = selectedProduct.ProductName;
+            txtUnitPrice.Text = selectedProduct.UnitPrice.ToString();
+            txtStockQty.Text = selectedProduct.StockQuantity.ToString();
+            txtReorderLevel.Text = selectedProduct.ReorderLevel.ToString();
+            dpExpirationDate.SelectedDate = selectedProduct.ExpirationDate;
+
+            cmbProductStatus.SelectedIndex = selectedProduct.Status == "Active" ? 0 : 1;
+
+            LoadProductCategoryCombo();
+
+            foreach (object item in cmbProductCategory.Items)
+            {
+                CategoryComboItem categoryItem = item as CategoryComboItem;
+
+                if (categoryItem != null && categoryItem.CategoryID == selectedProduct.CategoryID)
+                {
+                    cmbProductCategory.SelectedItem = categoryItem;
+                    break;
+                }
+            }
+
+            ProductOverlay.Visibility = Visibility.Visible;
+        }
+
+        private void SaveProduct_Click(object sender, RoutedEventArgs e)
+        {
+            string productCode = txtProductCode.Text.Trim();
+            string productName = txtProductName.Text.Trim();
+
+            decimal unitPrice;
+            int stockQty;
+            int reorderLevel;
+
+            if (productCode == "")
+            {
+                MessageBox.Show("Product code is required.");
+                return;
+            }
+
+            if (productName == "")
+            {
+                MessageBox.Show("Product name is required.");
+                return;
+            }
+
+            if (cmbProductCategory.SelectedItem == null)
+            {
+                MessageBox.Show("Category is required.");
+                return;
+            }
+
+            if (!decimal.TryParse(txtUnitPrice.Text, out unitPrice))
+            {
+                MessageBox.Show("Unit price must be a number.");
+                return;
+            }
+
+            if (!int.TryParse(txtStockQty.Text, out stockQty))
+            {
+                MessageBox.Show("Stock quantity must be a number.");
+                return;
+            }
+
+            if (!int.TryParse(txtReorderLevel.Text, out reorderLevel))
+            {
+                MessageBox.Show("Reorder level must be a number.");
+                return;
+            }
+
+            if (dpExpirationDate.SelectedDate == null)
+            {
+                MessageBox.Show("Expiration date is required.");
+                return;
+            }
+
+            CategoryComboItem selectedCategory = cmbProductCategory.SelectedItem as CategoryComboItem;
+
+            if (selectedCategory == null)
+            {
+                MessageBox.Show("Invalid category selected.");
+                return;
+            }
+
+            ComboBoxItem selectedStatusItem = cmbProductStatus.SelectedItem as ComboBoxItem;
+            string status = selectedStatusItem.Content.ToString();
+
+            using (NexPOSDataDataContext db = new NexPOSDataDataContext())
+            {
+                bool codeExists = db.tbl_Products.Any(p =>
+                    p.ProductCode.ToLower() == productCode.ToLower() &&
+                    p.ProductID != editingProductID
+                );
+
+                if (codeExists)
+                {
+                    MessageBox.Show("Product code already exists.");
+                    return;
+                }
+
+                if (editingProductID == 0)
+                {
+                    tbl_Product newProduct = new tbl_Product();
+
+                    newProduct.ProductCode = productCode;
+                    newProduct.ProductName = productName;
+                    newProduct.CategoryID = selectedCategory.CategoryID;
+                    newProduct.UnitPrice = unitPrice;
+                    newProduct.StockQuantity = stockQty;
+                    newProduct.ExpirationDate = dpExpirationDate.SelectedDate.Value;
+                    newProduct.ReorderLevel = reorderLevel;
+                    newProduct.Status = status;
+
+                    db.tbl_Products.InsertOnSubmit(newProduct);
+                    db.SubmitChanges();
+
+                    MessageBox.Show("Product added successfully.");
+                }
+                else
+                {
+                    var productToUpdate = db.tbl_Products
+                        .FirstOrDefault(p => p.ProductID == editingProductID);
+
+                    if (productToUpdate == null)
+                    {
+                        MessageBox.Show("Product not found.");
+                        return;
+                    }
+
+                    productToUpdate.ProductCode = productCode;
+                    productToUpdate.ProductName = productName;
+                    productToUpdate.CategoryID = selectedCategory.CategoryID;
+                    productToUpdate.UnitPrice = unitPrice;
+                    productToUpdate.StockQuantity = stockQty;
+                    productToUpdate.ExpirationDate = dpExpirationDate.SelectedDate.Value;
+                    productToUpdate.ReorderLevel = reorderLevel;
+                    productToUpdate.Status = status;
+
+                    db.SubmitChanges();
+
+                    MessageBox.Show("Product updated successfully.");
+                }
+            }
+
+            ProductOverlay.Visibility = Visibility.Collapsed;
+            editingProductID = 0;
+
+            LoadFilters();
+            RefreshInventory();
+        }
+
+        private void DeleteProduct_Click(object sender, RoutedEventArgs e)
+        {
+            Button button = sender as Button;
+
+            if (button == null)
+            {
+                return;
+            }
+
+            InventoryProductRow selectedProduct = button.DataContext as InventoryProductRow;
+
+            if (selectedProduct == null)
+            {
+                return;
+            }
+
+            MessageBoxResult result = MessageBox.Show(
+                "Are you sure you want to delete " + selectedProduct.ProductName + "?",
+                "Delete Product",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning
+            );
+
+            if (result != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            try
+            {
+                using (NexPOSDataDataContext db = new NexPOSDataDataContext())
+                {
+                    var productToDelete = db.tbl_Products
+                        .FirstOrDefault(p => p.ProductID == selectedProduct.ProductID);
+
+                    if (productToDelete == null)
+                    {
+                        MessageBox.Show("Product not found.");
+                        return;
+                    }
+
+                    db.tbl_Products.DeleteOnSubmit(productToDelete);
+                    db.SubmitChanges();
+                }
+
+                MessageBox.Show("Product deleted successfully.");
+
+                LoadFilters();
+                RefreshInventory();
+            }
+            catch
+            {
+                MessageBox.Show(
+                    "This product cannot be deleted because it may already be used in a transaction.",
+                    "Delete Product",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning
+                );
+            }
+        }
+
+        private void CloseProductModal_Click(object sender, RoutedEventArgs e)
+        {
+            ProductOverlay.Visibility = Visibility.Collapsed;
+            editingProductID = 0;
+        }
+    }
+}

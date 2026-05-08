@@ -1,0 +1,97 @@
+﻿<UserControl x:Class="NexPOS.CategoriesPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid Background="#F3F4F6">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="24" Width="590" HorizontalAlignment="Left">
+
+                <!-- HEADER -->
+                <StackPanel Margin="0,0,0,18">
+                    <TextBlock Text="Categories"
+                               FontSize="24"
+                               FontWeight="Bold"
+                               Foreground="#111827"/>
+
+                    <TextBlock Text="Manage product categories"
+                               FontSize="14"
+                               Foreground="#64748B"
+                               Margin="0,5,0,0"/>
+                </StackPanel>
+
+                <!-- ADD / EDIT CATEGORY -->
+                <Border Background="White"
+                        CornerRadius="12"
+                        Padding="20"
+                        Margin="0,0,0,18">
+
+                    <StackPanel>
+                        <TextBlock x:Name="txtFormTitle"
+                                   Text="Add New Category"
+                                   FontSize="15"
+                                   FontWeight="SemiBold"
+                                   Foreground="#111827"
+                                   Margin="0,0,0,12"/>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="90"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="90"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBox x:Name="txtCategoryName"
+                                     Height="38"
+                                     FontSize="14"
+                                     VerticalContentAlignment="Center"/>
+
+                            <Button x:Name="btnSaveCategory"
+                                    Grid.Column="2"
+                                    Content="+  Add"
+                                    Height="38"
+                                    Background="#00A651"
+                                    Foreground="White"
+                                    FontWeight="Bold"
+                                    BorderThickness="0"
+                                    Click="SaveCategory_Click"/>
+
+                            <Button x:Name="btnCancelEdit"
+                                    Grid.Column="4"
+                                    Content="Cancel"
+                                    Height="38"
+                                    Background="#E5E7EB"
+                                    Foreground="#111827"
+                                    FontWeight="SemiBold"
+                                    BorderThickness="0"
+                                    Visibility="Collapsed"
+                                    Click="CancelEdit_Click"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- CATEGORY LIST -->
+                <Border Background="White"
+                        CornerRadius="12"
+                        Padding="0">
+
+                    <StackPanel>
+                        <TextBlock x:Name="txtCategoryCount"
+                                   Text="0 CATEGORIES"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"
+                                   Foreground="#64748B"
+                                   Margin="20,18,20,14"/>
+
+                        <Border BorderBrush="#F1F5F9"
+                                BorderThickness="0,1,0,0"/>
+
+                        <StackPanel x:Name="categoryListPanel"/>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>
