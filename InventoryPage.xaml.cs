@@ -17,6 +17,19 @@ namespace NexPOS
             RefreshInventory();
         }
 
+        private void RefreshDashboard()
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                MainWindow mainWindow = Application.Current.MainWindow as MainWindow;
+
+                if (mainWindow != null)
+                {
+                    mainWindow.LoadDashboard();
+                }
+            });
+        }
+
         private void LoadFilters()
         {
             cmbCategory.Items.Clear();
@@ -134,7 +147,7 @@ namespace NexPOS
                 int lowStockProducts = products.Count(p => p.StockQuantity <= p.ReorderLevel && p.StockQuantity > 0);
                 int outOfStockProducts = products.Count(p => p.StockQuantity == 0);
 
-                txtSubtitle.Text = totalProducts + " products total · " + lowStockProducts + " low stock alerts";
+             
                 txtTotalProducts.Text = totalProducts.ToString();
                 txtActiveProducts.Text = activeProducts.ToString();
                 txtLowStock.Text = lowStockProducts.ToString();
@@ -307,6 +320,8 @@ namespace NexPOS
                     db.tbl_Products.InsertOnSubmit(newProduct);
                     db.SubmitChanges();
 
+                    RefreshDashboard();
+
                     MessageBox.Show("Product added successfully.");
                 }
                 else
@@ -330,6 +345,8 @@ namespace NexPOS
                     productToUpdate.Status = status;
 
                     db.SubmitChanges();
+
+                    RefreshDashboard();
 
                     MessageBox.Show("Product updated successfully.");
                 }
@@ -385,6 +402,8 @@ namespace NexPOS
 
                     db.tbl_Products.DeleteOnSubmit(productToDelete);
                     db.SubmitChanges();
+
+                    RefreshDashboard();
                 }
 
                 MessageBox.Show("Product deleted successfully.");

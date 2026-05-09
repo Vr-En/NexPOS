@@ -53,8 +53,16 @@
                     <RowDefinition Height="150"/>
                 </Grid.RowDefinitions>
 
-                <StackPanel Orientation="Horizontal" Margin="15,20,10,10">
-                    <Border Width="36" Height="36" Background="#00C853" CornerRadius="9">
+                <!-- LOGO -->
+                <StackPanel Grid.Row="0"
+                            Orientation="Horizontal"
+                            Margin="15,20,10,10">
+
+                    <Border Width="36"
+                            Height="36"
+                            Background="#00C853"
+                            CornerRadius="9">
+
                         <TextBlock Text="▣"
                                    Foreground="White"
                                    FontSize="20"
@@ -67,49 +75,57 @@
                                    Foreground="White"
                                    FontWeight="Bold"
                                    FontSize="15"/>
+
                         <TextBlock Text="Grocery POS"
                                    Foreground="#86EFAC"
                                    FontSize="11"/>
                     </StackPanel>
                 </StackPanel>
 
-                <StackPanel Grid.Row="1" Margin="10,10,10,0">
+                <!-- MENU -->
+                <StackPanel Grid.Row="1"
+                            Margin="10,10,10,0">
+
                     <Button x:Name="btnDashboard"
-                    Content="▦  Dashboard"
-                    Style="{StaticResource ActiveMenuButtonStyle}"
-                    Click="Dashboard_Click"/>
+                            Content="▦  Dashboard"
+                            Style="{StaticResource ActiveMenuButtonStyle}"
+                            Click="Dashboard_Click"/>
 
                     <Button x:Name="btnInventory"
-                    Content="▧  Inventory"
-                    Style="{StaticResource MenuButtonStyle}"
-                    Click="Inventory_Click"/>
-
-                    <Button x:Name="btnPOS"
-                    Content="🛒  Point of Sale"
-                    Style="{StaticResource MenuButtonStyle}"
-                    Click="POS_Click"/>
+                            Content="▧  Inventory"
+                            Style="{StaticResource MenuButtonStyle}"
+                            Click="Inventory_Click"/>
 
                     <Button x:Name="btnTransactions"
-                    Content="▣  Transactions"
-                    Style="{StaticResource MenuButtonStyle}"
-                    Click="Transactions_Click"/>
+                            Content="▣  Transactions"
+                            Style="{StaticResource MenuButtonStyle}"
+                            Click="Transactions_Click"/>
 
                     <Button x:Name="btnCategories"
-                    Content="◇  Categories"
-                    Style="{StaticResource MenuButtonStyle}"
-                    Click="Categories_Click"/>
+                            Content="◇  Categories"
+                            Style="{StaticResource MenuButtonStyle}"
+                            Click="Categories_Click"/>
 
                     <Button x:Name="btnUsers"
-                    Content="♙  Users"
-                    Style="{StaticResource MenuButtonStyle}"
-                    Click="Users_Click"/>
+                            Content="♙  Users"
+                            Style="{StaticResource MenuButtonStyle}"
+                            Click="Users_Click"/>
+
+                    <!--<Button x:Name="btnPOS"
+                            Content="🛒  Point of Sale"
+                            Style="{StaticResource MenuButtonStyle}"
+                            Click="POS_Click"/>-->
                 </StackPanel>
 
-                <StackPanel Grid.Row="2" Margin="12">
+                <!-- USER / SIGN OUT -->
+                <StackPanel Grid.Row="2"
+                            Margin="12">
+
                     <Border Background="#1F2937"
                             CornerRadius="8"
                             Padding="15"
                             Margin="0,0,0,12">
+
                         <StackPanel>
                             <TextBlock Text="Store Owner"
                                        Foreground="White"
@@ -121,6 +137,7 @@
                                     Width="55"
                                     Margin="0,6,0,0"
                                     HorizontalAlignment="Left">
+
                                 <TextBlock Text="Owner"
                                            Foreground="White"
                                            FontSize="11"
@@ -142,8 +159,10 @@
         <ScrollViewer x:Name="DashboardPanel"
                       Grid.Column="1"
                       VerticalScrollBarVisibility="Auto">
+
             <StackPanel Margin="22">
 
+                <!-- HEADER -->
                 <TextBlock Text="Good day, Store!"
                            FontSize="24"
                            FontWeight="Bold"
@@ -154,12 +173,26 @@
                            Foreground="#64748B"
                            Margin="0,5,0,20"/>
 
-                <!-- TOP CARDS -->
-                <UniformGrid Columns="4" Margin="0,0,0,20">
-                    <Border Style="{StaticResource CardStyle}" Margin="0,0,12,0">
+                <!-- TOP CARDS FIXED: 3 FULL WIDTH COLUMNS -->
+                <Grid Margin="0,0,0,20">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="14"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="14"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- TODAY SALES -->
+                    <Border Grid.Column="0"
+                            Style="{StaticResource CardStyle}"
+                            MinHeight="105">
+
                         <Grid>
-                            <StackPanel>
-                                <TextBlock Text="Today's Sales" Foreground="#64748B"/>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Today's Sales"
+                                           Foreground="#64748B"/>
+
                                 <TextBlock x:Name="txtTodaySales"
                                            Text="₱0.00"
                                            FontSize="22"
@@ -174,6 +207,7 @@
                                     Background="#DCFCE7"
                                     HorizontalAlignment="Right"
                                     VerticalAlignment="Center">
+
                                 <TextBlock Text="↗"
                                            Foreground="#16A34A"
                                            FontSize="24"
@@ -183,39 +217,18 @@
                         </Grid>
                     </Border>
 
-                    <Border Style="{StaticResource CardStyle}" Margin="0,0,12,0">
-                        <Grid>
-                            <StackPanel>
-                                <TextBlock Text="Today's Transactions" Foreground="#64748B"/>
-                                <TextBlock x:Name="txtTodayTransactions"
-                                           Text="0"
-                                           FontSize="22"
-                                           FontWeight="Bold"
-                                           Foreground="#2563EB"
-                                           Margin="0,8,0,0"/>
-                            </StackPanel>
+                    <!-- ACTIVE PRODUCTS -->
+                    <Border Grid.Column="2"
+                            Style="{StaticResource CardStyle}"
+                            MinHeight="105">
 
-                            <Border Width="44"
-                                    Height="44"
-                                    CornerRadius="13"
-                                    Background="#EFF6FF"
-                                    HorizontalAlignment="Right"
-                                    VerticalAlignment="Center">
-                                <TextBlock Text="▣"
-                                           Foreground="#2563EB"
-                                           FontSize="20"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"/>
-                            </Border>
-                        </Grid>
-                    </Border>
-
-                    <Border Style="{StaticResource CardStyle}" Margin="0,0,12,0">
                         <Grid>
-                            <StackPanel>
-                                <TextBlock Text="Active Products" Foreground="#64748B"/>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Active Products"
+                                           Foreground="#64748B"/>
+
                                 <TextBlock x:Name="txtActiveProducts"
-                                           Text="8"
+                                           Text="0"
                                            FontSize="22"
                                            FontWeight="Bold"
                                            Foreground="#9333EA"
@@ -228,6 +241,7 @@
                                     Background="#FAF5FF"
                                     HorizontalAlignment="Right"
                                     VerticalAlignment="Center">
+
                                 <TextBlock Text="◇"
                                            Foreground="#9333EA"
                                            FontSize="22"
@@ -237,10 +251,16 @@
                         </Grid>
                     </Border>
 
-                    <Border Style="{StaticResource CardStyle}">
+                    <!-- MONTHLY SALES -->
+                    <Border Grid.Column="4"
+                            Style="{StaticResource CardStyle}"
+                            MinHeight="105">
+
                         <Grid>
-                            <StackPanel>
-                                <TextBlock Text="Monthly Sales" Foreground="#64748B"/>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Monthly Sales"
+                                           Foreground="#64748B"/>
+
                                 <TextBlock x:Name="txtMonthlySales"
                                            Text="₱0.00"
                                            FontSize="22"
@@ -255,6 +275,7 @@
                                     Background="#FEF3C7"
                                     HorizontalAlignment="Right"
                                     VerticalAlignment="Center">
+
                                 <TextBlock Text="⌁"
                                            Foreground="#EA580C"
                                            FontSize="22"
@@ -263,7 +284,7 @@
                             </Border>
                         </Grid>
                     </Border>
-                </UniformGrid>
+                </Grid>
 
                 <!-- ALERTS -->
                 <Grid Margin="0,0,0,20">
@@ -273,7 +294,11 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
-                    <Border Grid.Column="0" Style="{StaticResource CardStyle}">
+                    <!-- LOW STOCK -->
+                    <Border Grid.Column="0"
+                            Style="{StaticResource CardStyle}"
+                            MinHeight="130">
+
                         <StackPanel>
                             <Grid Margin="0,0,0,10">
                                 <StackPanel Orientation="Horizontal">
@@ -281,6 +306,7 @@
                                             Height="32"
                                             CornerRadius="8"
                                             Background="#FEE2E2">
+
                                         <TextBlock Text="⚠"
                                                    Foreground="#EF4444"
                                                    HorizontalAlignment="Center"
@@ -297,47 +323,31 @@
                                         CornerRadius="10"
                                         Padding="8,3"
                                         HorizontalAlignment="Right">
+
                                     <TextBlock x:Name="txtLowStockCount"
-                                               Text="2 items"
+                                               Text="0 items"
                                                Foreground="#EF4444"
                                                FontSize="12"
                                                FontWeight="Bold"/>
                                 </Border>
                             </Grid>
 
-                            <StackPanel x:Name="lowStockPanel">
-                                <Border Background="#FEF2F2"
-                                        CornerRadius="8"
-                                        Padding="12,8"
-                                        Margin="0,5">
-                                    <Grid>
-                                        <TextBlock Text="Sardines in Tomato Sauce"
-                                                   FontWeight="SemiBold"/>
-                                        <TextBlock Text="8 left"
-                                                   Foreground="Red"
-                                                   FontWeight="SemiBold"
-                                                   HorizontalAlignment="Right"/>
-                                    </Grid>
-                                </Border>
+                            <StackPanel x:Name="lowStockPanel"
+                                        MinHeight="45">
 
-                                <Border Background="#FEF2F2"
-                                        CornerRadius="8"
-                                        Padding="12,8"
-                                        Margin="0,5">
-                                    <Grid>
-                                        <TextBlock Text="Cream-O Cookies"
-                                                   FontWeight="SemiBold"/>
-                                        <TextBlock Text="5 left"
-                                                   Foreground="Red"
-                                                   FontWeight="SemiBold"
-                                                   HorizontalAlignment="Right"/>
-                                    </Grid>
-                                </Border>
+                                <TextBlock Text="No low stock items"
+                                           Foreground="#94A3B8"
+                                           HorizontalAlignment="Center"
+                                           Margin="0,10,0,0"/>
                             </StackPanel>
                         </StackPanel>
                     </Border>
 
-                    <Border Grid.Column="2" Style="{StaticResource CardStyle}">
+                    <!-- EXPIRING -->
+                    <Border Grid.Column="2"
+                            Style="{StaticResource CardStyle}"
+                            MinHeight="130">
+
                         <StackPanel>
                             <Grid Margin="0,0,0,10">
                                 <StackPanel Orientation="Horizontal">
@@ -345,6 +355,7 @@
                                             Height="32"
                                             CornerRadius="8"
                                             Background="#FEF3C7">
+
                                         <TextBlock Text="◴"
                                                    Foreground="#F59E0B"
                                                    HorizontalAlignment="Center"
@@ -361,119 +372,66 @@
                                         CornerRadius="10"
                                         Padding="8,3"
                                         HorizontalAlignment="Right">
+
                                     <TextBlock x:Name="txtExpiringCount"
-                                               Text="1 items"
+                                               Text="0 items"
                                                Foreground="#F59E0B"
                                                FontSize="12"
                                                FontWeight="Bold"/>
                                 </Border>
                             </Grid>
 
-                            <StackPanel x:Name="expiringPanel">
-                                <Border Background="#FFFBEB"
-                                        CornerRadius="8"
-                                        Padding="12,8"
-                                        Margin="0,5">
-                                    <Grid>
-                                        <TextBlock Text="Fresh Milk 1L"
-                                                   FontWeight="SemiBold"/>
-                                        <TextBlock Text="5/1/2026"
-                                                   Foreground="#EA580C"
-                                                   FontWeight="SemiBold"
-                                                   HorizontalAlignment="Right"/>
-                                    </Grid>
-                                </Border>
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-                </Grid>
+                            <StackPanel x:Name="expiringPanel"
+                                        MinHeight="45">
 
-                <!-- QUICK NAVIGATION AND RECENT TRANSACTIONS -->
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="390"/>
-                        <ColumnDefinition Width="20"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-
-                    <Border Grid.Column="0"
-                            Style="{StaticResource CardStyle}"
-                            Height="260">
-                        <StackPanel>
-                            <TextBlock Text="Quick Navigation"
-                                       FontWeight="Bold"
-                                       Margin="0,0,0,16"/>
-
-                            <Button Content="🛒   Point of Sale                                      →"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    HorizontalContentAlignment="Left"
-                                    Margin="0,4"
-                                    Click="POS_Click"/>
-
-                            <Button Content="◇   Inventory                                           →"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    HorizontalContentAlignment="Left"
-                                    Margin="0,4"
-                                    Click="Inventory_Click"/>
-
-                            <Button Content="▣   Transactions                                      →"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    HorizontalContentAlignment="Left"
-                                    Margin="0,4"
-                                    Click="Transactions_Click"/>
-
-                            <Button Content="♙   Users                                                →"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    HorizontalContentAlignment="Left"
-                                    Margin="0,4"
-                                    Click="Users_Click"/>
-
-                            <Button Content="◇   Categories                                        →"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    HorizontalContentAlignment="Left"
-                                    Margin="0,4"
-                                    Click="Categories_Click"/>
-                        </StackPanel>
-                    </Border>
-
-                    <Border Grid.Column="2"
-                            Style="{StaticResource CardStyle}"
-                            Height="260">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="35"/>
-                                <RowDefinition Height="*"/>
-                            </Grid.RowDefinitions>
-
-                            <Grid>
-                                <TextBlock Text="Recent Transactions"
-                                           FontWeight="Bold"
-                                           VerticalAlignment="Top"/>
-
-                                <Button Content="View all →"
-                                        Background="Transparent"
-                                        BorderThickness="0"
-                                        Foreground="#16A34A"
-                                        HorizontalAlignment="Right"
-                                        Click="Transactions_Click"/>
-                            </Grid>
-
-                            <StackPanel x:Name="recentTransactionsPanel"
-                                        Grid.Row="1"
-                                        VerticalAlignment="Center">
-                                <TextBlock Text="No transactions yet"
+                                <TextBlock Text="No products expiring soon"
                                            Foreground="#94A3B8"
                                            HorizontalAlignment="Center"
-                                           Margin="0,70,0,0"/>
+                                           Margin="0,10,0,0"/>
                             </StackPanel>
-                        </Grid>
+                        </StackPanel>
                     </Border>
                 </Grid>
+
+                <!-- RECENT TRANSACTIONS FULL WIDTH FIXED -->
+                <Border Style="{StaticResource CardStyle}"
+                        MinHeight="320"
+                        Margin="0,0,0,20">
+
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="40"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <Grid Grid.Row="0">
+                            <TextBlock Text="Recent Transactions"
+                                       FontWeight="Bold"
+                                       FontSize="15"
+                                       VerticalAlignment="Center"/>
+
+                            <Button Content="View all →"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Foreground="#16A34A"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Center"
+                                    Cursor="Hand"
+                                    Click="Transactions_Click"/>
+                        </Grid>
+
+                        <StackPanel x:Name="recentTransactionsPanel"
+                                    Grid.Row="1"
+                                    VerticalAlignment="Center"
+                                    HorizontalAlignment="Stretch">
+
+                            <TextBlock Text="No transactions yet"
+                                       Foreground="#94A3B8"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,90,0,0"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
             </StackPanel>
         </ScrollViewer>
 
@@ -482,6 +440,7 @@
               Grid.Column="1"
               Background="#F3F4F6"
               Visibility="Collapsed">
+
             <ContentControl x:Name="MainContent"/>
         </Grid>
     </Grid>
