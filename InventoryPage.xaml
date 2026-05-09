@@ -19,8 +19,6 @@
                                    FontSize="24"
                                    FontWeight="Bold"
                                    Foreground="#111827"/>
-
-                        
                     </StackPanel>
 
                     <Button Grid.Column="1"
@@ -375,10 +373,26 @@
 
                             <StackPanel Grid.Column="0">
                                 <TextBlock Text="PRODUCT CODE *" FontWeight="SemiBold" Foreground="#475569"/>
-                                <TextBox x:Name="txtProductCode" Height="38" Margin="0,5,0,14"/>
+
+                                <ComboBox x:Name="txtProductCode"
+                                          Height="38"
+                                          Margin="0,5,0,14"
+                                          IsEditable="True"
+                                          IsTextSearchEnabled="False"
+                                          StaysOpenOnEdit="True"
+                                          KeyUp="ProductCodeAutoComplete_KeyUp"
+                                          SelectionChanged="ProductCodeSuggestion_SelectionChanged"/>
 
                                 <TextBlock Text="PRODUCT NAME *" FontWeight="SemiBold" Foreground="#475569"/>
-                                <TextBox x:Name="txtProductName" Height="38" Margin="0,5,0,14"/>
+
+                                <ComboBox x:Name="txtProductName"
+                                          Height="38"
+                                          Margin="0,5,0,14"
+                                          IsEditable="True"
+                                          IsTextSearchEnabled="False"
+                                          StaysOpenOnEdit="True"
+                                          KeyUp="ProductNameAutoComplete_KeyUp"
+                                          SelectionChanged="ProductNameSuggestion_SelectionChanged"/>
 
                                 <TextBlock Text="CATEGORY *" FontWeight="SemiBold" Foreground="#475569"/>
                                 <ComboBox x:Name="cmbProductCategory" Height="38" Margin="0,5,0,14"/>

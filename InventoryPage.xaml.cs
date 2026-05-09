@@ -1,13 +1,17 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Threading;
 
 namespace NexPOS
 {
     public partial class InventoryPage : UserControl
     {
         private int editingProductID = 0;
+        private bool isAutoCompleteChanging = false;
 
         public InventoryPage()
         {
@@ -147,7 +151,6 @@ namespace NexPOS
                 int lowStockProducts = products.Count(p => p.StockQuantity <= p.ReorderLevel && p.StockQuantity > 0);
                 int outOfStockProducts = products.Count(p => p.StockQuantity == 0);
 
-             
                 txtTotalProducts.Text = totalProducts.ToString();
                 txtActiveProducts.Text = activeProducts.ToString();
                 txtLowStock.Text = lowStockProducts.ToString();
@@ -170,8 +173,9 @@ namespace NexPOS
             txtModalTitle.Text = "Add New Product";
             btnSaveProduct.Content = "Add Product";
 
-            txtProductCode.Text = "";
-            txtProductName.Text = "";
+            SetEditableComboBoxText(txtProductCode, "");
+            SetEditableComboBoxText(txtProductName, "");
+
             txtUnitPrice.Text = "";
             txtStockQty.Text = "";
             txtReorderLevel.Text = "10";
@@ -204,8 +208,9 @@ namespace NexPOS
             txtModalTitle.Text = "Edit Product";
             btnSaveProduct.Content = "Update Product";
 
-            txtProductCode.Text = selectedProduct.ProductCode;
-            txtProductName.Text = selectedProduct.ProductName;
+            SetEditableComboBoxText(txtProductCode, selectedProduct.ProductCode);
+            SetEditableComboBoxText(txtProductName, selectedProduct.ProductName);
+
             txtUnitPrice.Text = selectedProduct.UnitPrice.ToString();
             txtStockQty.Text = selectedProduct.StockQuantity.ToString();
             txtReorderLevel.Text = selectedProduct.ReorderLevel.ToString();
@@ -214,19 +219,261 @@ namespace NexPOS
             cmbProductStatus.SelectedIndex = selectedProduct.Status == "Active" ? 0 : 1;
 
             LoadProductCategoryCombo();
+            SelectProductCategory(selectedProduct.CategoryID);
 
+            ProductOverlay.Visibility = Visibility.Visible;
+        }
+
+        private void ProductCodeAutoComplete_KeyUp(object sender, KeyEventArgs e)
+        {
+            if (ShouldIgnoreAutoCompleteKey(e.Key) || isAutoCompleteChanging)
+            {
+                return;
+            }
+
+            string typedText = txtProductCode.Text.Trim();
+
+            if (typedText == "")
+            {
+                txtProductCode.ItemsSource = null;
+                txtProductCode.IsDropDownOpen = false;
+                return;
+            }
+
+            using (NexPOSDataDataContext db = new NexPOSDataDataContext())
+            {
+                string searchText = typedText.ToLower();
+
+                List<string> suggestions = db.tbl_Products
+                    .Where(p => p.ProductCode.ToLower().Contains(searchText))
+                    .OrderBy(p => p.ProductCode)
+                    .Select(p => p.ProductCode)
+                    .Distinct()
+                    .Take(10)
+                    .ToList();
+
+                ApplyComboSuggestions(txtProductCode, typedText, suggestions);
+            }
+        }
+
+        private void ProductNameAutoComplete_KeyUp(object sender, KeyEventArgs e)
+        {
+            if (ShouldIgnoreAutoCompleteKey(e.Key) || isAutoCompleteChanging)
+            {
+                return;
+            }
+
+            string typedText = txtProductName.Text.Trim();
+
+            if (typedText == "")
+            {
+                txtProductName.ItemsSource = null;
+                txtProductName.IsDropDownOpen = false;
+                return;
+            }
+
+            using (NexPOSDataDataContext db = new NexPOSDataDataContext())
+            {
+                string searchText = typedText.ToLower();
+
+                List<string> suggestions = db.tbl_Products
+                    .Where(p => p.ProductName.ToLower().Contains(searchText))
+                    .OrderBy(p => p.ProductName)
+                    .Select(p => p.ProductName)
+                    .Distinct()
+                    .Take(10)
+                    .ToList();
+
+                ApplyComboSuggestions(txtProductName, typedText, suggestions);
+            }
+        }
+
+        private bool ShouldIgnoreAutoCompleteKey(Key key)
+        {
+            return key == Key.Up ||
+                   key == Key.Down ||
+                   key == Key.Left ||
+                   key == Key.Right ||
+                   key == Key.Enter ||
+                   key == Key.Escape ||
+                   key == Key.Tab;
+        }
+
+        private void ApplyComboSuggestions(ComboBox comboBox, string typedText, List<string> suggestions)
+        {
+            bool previousState = isAutoCompleteChanging;
+            isAutoCompleteChanging = true;
+
+            comboBox.ItemsSource = suggestions;
+            comboBox.IsDropDownOpen = suggestions.Count > 0;
+            comboBox.Text = typedText;
+
+            comboBox.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                MoveComboCaretToEnd(comboBox);
+            }), DispatcherPriority.Background);
+
+            isAutoCompleteChanging = previousState;
+        }
+
+        private void MoveComboCaretToEnd(ComboBox comboBox)
+        {
+            comboBox.ApplyTemplate();
+
+            TextBox editableTextBox =
+                comboBox.Template.FindName("PART_EditableTextBox", comboBox) as TextBox;
+
+            if (editableTextBox != null)
+            {
+                editableTextBox.CaretIndex = editableTextBox.Text.Length;
+                editableTextBox.Focus();
+            }
+        }
+
+        private void SetEditableComboBoxText(ComboBox comboBox, string value)
+        {
+            string safeValue = value ?? "";
+
+            bool previousState = isAutoCompleteChanging;
+            isAutoCompleteChanging = true;
+
+            comboBox.IsDropDownOpen = false;
+            comboBox.SelectedIndex = -1;
+            comboBox.SelectedItem = null;
+            comboBox.ItemsSource = null;
+            comboBox.Text = safeValue;
+
+            comboBox.ApplyTemplate();
+
+            TextBox editableTextBox =
+                comboBox.Template.FindName("PART_EditableTextBox", comboBox) as TextBox;
+
+            if (editableTextBox != null)
+            {
+                editableTextBox.Text = safeValue;
+                editableTextBox.CaretIndex = editableTextBox.Text.Length;
+            }
+
+            comboBox.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                bool innerPreviousState = isAutoCompleteChanging;
+                isAutoCompleteChanging = true;
+
+                comboBox.IsDropDownOpen = false;
+                comboBox.Text = safeValue;
+
+                comboBox.ApplyTemplate();
+
+                TextBox innerTextBox =
+                    comboBox.Template.FindName("PART_EditableTextBox", comboBox) as TextBox;
+
+                if (innerTextBox != null)
+                {
+                    innerTextBox.Text = safeValue;
+                    innerTextBox.CaretIndex = innerTextBox.Text.Length;
+                }
+
+                isAutoCompleteChanging = innerPreviousState;
+
+            }), DispatcherPriority.Background);
+
+            isAutoCompleteChanging = previousState;
+        }
+
+        private void ProductCodeSuggestion_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (isAutoCompleteChanging)
+            {
+                return;
+            }
+
+            string selectedCode = txtProductCode.SelectedItem as string;
+
+            if (string.IsNullOrWhiteSpace(selectedCode))
+            {
+                return;
+            }
+
+            LoadProductFromSuggestion(selectedCode, true);
+        }
+
+        private void ProductNameSuggestion_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (isAutoCompleteChanging)
+            {
+                return;
+            }
+
+            string selectedName = txtProductName.SelectedItem as string;
+
+            if (string.IsNullOrWhiteSpace(selectedName))
+            {
+                return;
+            }
+
+            LoadProductFromSuggestion(selectedName, false);
+        }
+
+        private void LoadProductFromSuggestion(string value, bool searchByCode)
+        {
+            using (NexPOSDataDataContext db = new NexPOSDataDataContext())
+            {
+                tbl_Product product = null;
+
+                if (searchByCode)
+                {
+                    product = db.tbl_Products.FirstOrDefault(p => p.ProductCode == value);
+                }
+                else
+                {
+                    product = db.tbl_Products.FirstOrDefault(p => p.ProductName == value);
+                }
+
+                if (product == null)
+                {
+                    return;
+                }
+
+                editingProductID = product.ProductID;
+
+                txtModalTitle.Text = "Edit Product";
+                btnSaveProduct.Content = "Update Product";
+
+                SetEditableComboBoxText(txtProductCode, product.ProductCode);
+                SetEditableComboBoxText(txtProductName, product.ProductName);
+
+                txtUnitPrice.Text = product.UnitPrice.ToString("0.00");
+                txtStockQty.Text = product.StockQuantity.ToString();
+                txtReorderLevel.Text = product.ReorderLevel.ToString();
+
+                if (product.ExpirationDate.HasValue)
+                {
+                    dpExpirationDate.SelectedDate = product.ExpirationDate.Value;
+                }
+                else
+                {
+                    dpExpirationDate.SelectedDate = null;
+                }
+
+                cmbProductStatus.SelectedIndex = product.Status == "Active" ? 0 : 1;
+
+                LoadProductCategoryCombo();
+                SelectProductCategory(product.CategoryID);
+            }
+        }
+
+        private void SelectProductCategory(int categoryID)
+        {
             foreach (object item in cmbProductCategory.Items)
             {
                 CategoryComboItem categoryItem = item as CategoryComboItem;
 
-                if (categoryItem != null && categoryItem.CategoryID == selectedProduct.CategoryID)
+                if (categoryItem != null && categoryItem.CategoryID == categoryID)
                 {
                     cmbProductCategory.SelectedItem = categoryItem;
                     break;
                 }
             }
-
-            ProductOverlay.Visibility = Visibility.Visible;
         }
 
         private void SaveProduct_Click(object sender, RoutedEventArgs e)
