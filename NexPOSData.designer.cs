@@ -45,6 +45,9 @@ namespace NexPOS
     partial void Inserttbl_User(tbl_User instance);
     partial void Updatetbl_User(tbl_User instance);
     partial void Deletetbl_User(tbl_User instance);
+    partial void Inserttbl_ProductBatch(tbl_ProductBatch instance);
+    partial void Updatetbl_ProductBatch(tbl_ProductBatch instance);
+    partial void Deletetbl_ProductBatch(tbl_ProductBatch instance);
     #endregion
 		
 		public NexPOSDataDataContext() : 
@@ -114,6 +117,14 @@ namespace NexPOS
 			get
 			{
 				return this.GetTable<tbl_User>();
+			}
+		}
+		
+		public System.Data.Linq.Table<tbl_ProductBatch> tbl_ProductBatches
+		{
+			get
+			{
+				return this.GetTable<tbl_ProductBatch>();
 			}
 		}
 	}
@@ -258,6 +269,8 @@ namespace NexPOS
 		
 		private EntitySet<tbl_Transactions_Item> _tbl_Transactions_Items;
 		
+		private EntitySet<tbl_ProductBatch> _tbl_ProductBatches;
+		
 		private EntityRef<tbl_Category> _tbl_Category;
 		
     #region Extensibility Method Definitions
@@ -287,6 +300,7 @@ namespace NexPOS
 		public tbl_Product()
 		{
 			this._tbl_Transactions_Items = new EntitySet<tbl_Transactions_Item>(new Action<tbl_Transactions_Item>(this.attach_tbl_Transactions_Items), new Action<tbl_Transactions_Item>(this.detach_tbl_Transactions_Items));
+			this._tbl_ProductBatches = new EntitySet<tbl_ProductBatch>(new Action<tbl_ProductBatch>(this.attach_tbl_ProductBatches), new Action<tbl_ProductBatch>(this.detach_tbl_ProductBatches));
 			this._tbl_Category = default(EntityRef<tbl_Category>);
 			OnCreated();
 		}
@@ -488,6 +502,19 @@ namespace NexPOS
 			}
 		}
 		
+		[global::System.Data.Linq.Mapping.AssociationAttribute(Name="tbl_Product_tbl_ProductBatch", Storage="_tbl_ProductBatches", ThisKey="ProductID", OtherKey="ProductID")]
+		public EntitySet<tbl_ProductBatch> tbl_ProductBatches
+		{
+			get
+			{
+				return this._tbl_ProductBatches;
+			}
+			set
+			{
+				this._tbl_ProductBatches.Assign(value);
+			}
+		}
+		
 		[global::System.Data.Linq.Mapping.AssociationAttribute(Name="tbl_Category_tbl_Product", Storage="_tbl_Category", ThisKey="CategoryID", OtherKey="CategoryID", IsForeignKey=true)]
 		public tbl_Category tbl_Category
 		{
@@ -549,6 +576,18 @@ namespace NexPOS
 		}
 		
 		private void detach_tbl_Transactions_Items(tbl_Transactions_Item entity)
+		{
+			this.SendPropertyChanging();
+			entity.tbl_Product = null;
+		}
+		
+		private void attach_tbl_ProductBatches(tbl_ProductBatch entity)
+		{
+			this.SendPropertyChanging();
+			entity.tbl_Product = this;
+		}
+		
+		private void detach_tbl_ProductBatches(tbl_ProductBatch entity)
 		{
 			this.SendPropertyChanging();
 			entity.tbl_Product = null;
@@ -1229,6 +1268,229 @@ namespace NexPOS
 		{
 			this.SendPropertyChanging();
 			entity.tbl_User = null;
+		}
+	}
+	
+	[global::System.Data.Linq.Mapping.TableAttribute(Name="dbo.tbl_ProductBatches")]
+	public partial class tbl_ProductBatch : INotifyPropertyChanging, INotifyPropertyChanged
+	{
+		
+		private static PropertyChangingEventArgs emptyChangingEventArgs = new PropertyChangingEventArgs(String.Empty);
+		
+		private int _BatchID;
+		
+		private int _ProductID;
+		
+		private int _StockQuantity;
+		
+		private System.DateTime _ExpirationDate;
+		
+		private System.DateTime _DateReceived;
+		
+		private string _Status;
+		
+		private EntityRef<tbl_Product> _tbl_Product;
+		
+    #region Extensibility Method Definitions
+    partial void OnLoaded();
+    partial void OnValidate(System.Data.Linq.ChangeAction action);
+    partial void OnCreated();
+    partial void OnBatchIDChanging(int value);
+    partial void OnBatchIDChanged();
+    partial void OnProductIDChanging(int value);
+    partial void OnProductIDChanged();
+    partial void OnStockQuantityChanging(int value);
+    partial void OnStockQuantityChanged();
+    partial void OnExpirationDateChanging(System.DateTime value);
+    partial void OnExpirationDateChanged();
+    partial void OnDateReceivedChanging(System.DateTime value);
+    partial void OnDateReceivedChanged();
+    partial void OnStatusChanging(string value);
+    partial void OnStatusChanged();
+    #endregion
+		
+		public tbl_ProductBatch()
+		{
+			this._tbl_Product = default(EntityRef<tbl_Product>);
+			OnCreated();
+		}
+		
+		[global::System.Data.Linq.Mapping.ColumnAttribute(Storage="_BatchID", AutoSync=AutoSync.OnInsert, DbType="Int NOT NULL IDENTITY", IsPrimaryKey=true, IsDbGenerated=true)]
+		public int BatchID
+		{
+			get
+			{
+				return this._BatchID;
+			}
+			set
+			{
+				if ((this._BatchID != value))
+				{
+					this.OnBatchIDChanging(value);
+					this.SendPropertyChanging();
+					this._BatchID = value;
+					this.SendPropertyChanged("BatchID");
+					this.OnBatchIDChanged();
+				}
+			}
+		}
+		
+		[global::System.Data.Linq.Mapping.ColumnAttribute(Storage="_ProductID", DbType="Int NOT NULL")]
+		public int ProductID
+		{
+			get
+			{
+				return this._ProductID;
+			}
+			set
+			{
+				if ((this._ProductID != value))
+				{
+					if (this._tbl_Product.HasLoadedOrAssignedValue)
+					{
+						throw new System.Data.Linq.ForeignKeyReferenceAlreadyHasValueException();
+					}
+					this.OnProductIDChanging(value);
+					this.SendPropertyChanging();
+					this._ProductID = value;
+					this.SendPropertyChanged("ProductID");
+					this.OnProductIDChanged();
+				}
+			}
+		}
+		
+		[global::System.Data.Linq.Mapping.ColumnAttribute(Storage="_StockQuantity", DbType="Int NOT NULL")]
+		public int StockQuantity
+		{
+			get
+			{
+				return this._StockQuantity;
+			}
+			set
+			{
+				if ((this._StockQuantity != value))
+				{
+					this.OnStockQuantityChanging(value);
+					this.SendPropertyChanging();
+					this._StockQuantity = value;
+					this.SendPropertyChanged("StockQuantity");
+					this.OnStockQuantityChanged();
+				}
+			}
+		}
+		
+		[global::System.Data.Linq.Mapping.ColumnAttribute(Storage="_ExpirationDate", DbType="Date NOT NULL")]
+		public System.DateTime ExpirationDate
+		{
+			get
+			{
+				return this._ExpirationDate;
+			}
+			set
+			{
+				if ((this._ExpirationDate != value))
+				{
+					this.OnExpirationDateChanging(value);
+					this.SendPropertyChanging();
+					this._ExpirationDate = value;
+					this.SendPropertyChanged("ExpirationDate");
+					this.OnExpirationDateChanged();
+				}
+			}
+		}
+		
+		[global::System.Data.Linq.Mapping.ColumnAttribute(Storage="_DateReceived", DbType="DateTime NOT NULL")]
+		public System.DateTime DateReceived
+		{
+			get
+			{
+				return this._DateReceived;
+			}
+			set
+			{
+				if ((this._DateReceived != value))
+				{
+					this.OnDateReceivedChanging(value);
+					this.SendPropertyChanging();
+					this._DateReceived = value;
+					this.SendPropertyChanged("DateReceived");
+					this.OnDateReceivedChanged();
+				}
+			}
+		}
+		
+		[global::System.Data.Linq.Mapping.ColumnAttribute(Storage="_Status", DbType="NVarChar(20) NOT NULL", CanBeNull=false)]
+		public string Status
+		{
+			get
+			{
+				return this._Status;
+			}
+			set
+			{
+				if ((this._Status != value))
+				{
+					this.OnStatusChanging(value);
+					this.SendPropertyChanging();
+					this._Status = value;
+					this.SendPropertyChanged("Status");
+					this.OnStatusChanged();
+				}
+			}
+		}
+		
+		[global::System.Data.Linq.Mapping.AssociationAttribute(Name="tbl_Product_tbl_ProductBatch", Storage="_tbl_Product", ThisKey="ProductID", OtherKey="ProductID", IsForeignKey=true)]
+		public tbl_Product tbl_Product
+		{
+			get
+			{
+				return this._tbl_Product.Entity;
+			}
+			set
+			{
+				tbl_Product previousValue = this._tbl_Product.Entity;
+				if (((previousValue != value) 
+							|| (this._tbl_Product.HasLoadedOrAssignedValue == false)))
+				{
+					this.SendPropertyChanging();
+					if ((previousValue != null))
+					{
+						this._tbl_Product.Entity = null;
+						previousValue.tbl_ProductBatches.Remove(this);
+					}
+					this._tbl_Product.Entity = value;
+					if ((value != null))
+					{
+						value.tbl_ProductBatches.Add(this);
+						this._ProductID = value.ProductID;
+					}
+					else
+					{
+						this._ProductID = default(int);
+					}
+					this.SendPropertyChanged("tbl_Product");
+				}
+			}
+		}
+		
+		public event PropertyChangingEventHandler PropertyChanging;
+		
+		public event PropertyChangedEventHandler PropertyChanged;
+		
+		protected virtual void SendPropertyChanging()
+		{
+			if ((this.PropertyChanging != null))
+			{
+				this.PropertyChanging(this, emptyChangingEventArgs);
+			}
+		}
+		
+		protected virtual void SendPropertyChanged(String propertyName)
+		{
+			if ((this.PropertyChanged != null))
+			{
+				this.PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+			}
 		}
 	}
 }

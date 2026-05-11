@@ -113,7 +113,6 @@ namespace NexPOS
 
                 txtTodaySales.Text = "₱" + todaySales.ToString("N2");
 
-
                 // ACTIVE PRODUCTS
                 int activeProducts = db.tbl_Products
                     .Count(p => p.Status == "Active");
@@ -152,29 +151,46 @@ namespace NexPOS
                     }
                 }
 
-                // EXPIRING SOON ALERTS
-                var expiring = db.tbl_Products
-                    .Where(p => p.ExpirationDate.HasValue &&
-                                p.ExpirationDate.Value >= today &&
-                                p.ExpirationDate.Value <= thirtyDaysFromNow)
-                    .OrderBy(p => p.ExpirationDate)
+                // EXPIRING BATCH ALERTS
+                var expiringBatches = db.tbl_ProductBatches
+                    .Join(
+                        db.tbl_Products,
+                        batch => batch.ProductID,
+                        product => product.ProductID,
+                        (batch, product) => new
+                        {
+                            ProductName = product.ProductName,
+                            StockQuantity = batch.StockQuantity,
+                            ExpirationDate = batch.ExpirationDate,
+                            Status = batch.Status
+                        }
+                    )
+                    .ToList()
+                    .Where(item =>
+                        item.Status == "Active" &&
+                        item.StockQuantity > 0 &&
+                        Convert.ToDateTime(item.ExpirationDate) >= today &&
+                        Convert.ToDateTime(item.ExpirationDate) <= thirtyDaysFromNow)
+                    .OrderBy(item => Convert.ToDateTime(item.ExpirationDate))
                     .ToList();
 
-                txtExpiringCount.Text = expiring.Count + " items";
+                txtExpiringCount.Text = expiringBatches.Count + " batches";
 
                 expiringPanel.Children.Clear();
 
-                if (expiring.Count == 0)
+                if (expiringBatches.Count == 0)
                 {
-                    expiringPanel.Children.Add(CreateEmptyMessage("No products expiring soon"));
+                    expiringPanel.Children.Add(CreateEmptyMessage("No batches expiring soon"));
                 }
                 else
                 {
-                    foreach (var item in expiring)
+                    foreach (var item in expiringBatches)
                     {
+                        DateTime expirationDate = Convert.ToDateTime(item.ExpirationDate);
+
                         expiringPanel.Children.Add(CreateAlertItem(
                             item.ProductName,
-                            item.ExpirationDate.Value.ToString("MM/dd/yyyy"),
+                            item.StockQuantity + " pcs · " + expirationDate.ToString("MM/dd/yyyy"),
                             false));
                     }
                 }

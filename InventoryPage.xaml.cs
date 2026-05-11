@@ -11,7 +11,29 @@ namespace NexPOS
     public partial class InventoryPage : UserControl
     {
         private int editingProductID = 0;
+        private int currentBatchProductID = 0;
+        private int editingBatchID = 0;
         private bool isAutoCompleteChanging = false;
+
+        private class BatchRow
+        {
+            public int BatchID { get; set; }
+            public int ProductID { get; set; }
+            public int StockQuantity { get; set; }
+            public DateTime ExpirationDate { get; set; }
+            public DateTime DateReceived { get; set; }
+            public string Status { get; set; }
+
+            public string ExpirationText
+            {
+                get { return ExpirationDate.ToString("M/d/yyyy"); }
+            }
+
+            public string DateReceivedText
+            {
+                get { return DateReceived.ToString("M/d/yyyy"); }
+            }
+        }
 
         public InventoryPage()
         {
@@ -111,6 +133,9 @@ namespace NexPOS
 
             using (NexPOSDataDataContext db = new NexPOSDataDataContext())
             {
+                RefreshAllProductSummaries(db);
+                db.SubmitChanges();
+
                 var products = db.tbl_Products
                     .Join(
                         db.tbl_Categories,
@@ -170,8 +195,13 @@ namespace NexPOS
         {
             editingProductID = 0;
 
-            txtModalTitle.Text = "Add New Product";
-            btnSaveProduct.Content = "Add Product";
+            txtModalTitle.Text = "Add Product / Batch";
+            btnSaveProduct.Content = "Save Product";
+
+            txtProductCode.IsEnabled = true;
+            txtProductName.IsEnabled = true;
+            txtStockQty.IsEnabled = true;
+            dpExpirationDate.IsEnabled = true;
 
             SetEditableComboBoxText(txtProductCode, "");
             SetEditableComboBoxText(txtProductName, "");
@@ -208,13 +238,20 @@ namespace NexPOS
             txtModalTitle.Text = "Edit Product";
             btnSaveProduct.Content = "Update Product";
 
+            txtProductCode.IsEnabled = true;
+            txtProductName.IsEnabled = true;
+
+            txtStockQty.Text = "";
+            txtStockQty.IsEnabled = false;
+
+            dpExpirationDate.SelectedDate = null;
+            dpExpirationDate.IsEnabled = false;
+
             SetEditableComboBoxText(txtProductCode, selectedProduct.ProductCode);
             SetEditableComboBoxText(txtProductName, selectedProduct.ProductName);
 
-            txtUnitPrice.Text = selectedProduct.UnitPrice.ToString();
-            txtStockQty.Text = selectedProduct.StockQuantity.ToString();
+            txtUnitPrice.Text = selectedProduct.UnitPrice.ToString("0.00");
             txtReorderLevel.Text = selectedProduct.ReorderLevel.ToString();
-            dpExpirationDate.SelectedDate = selectedProduct.ExpirationDate;
 
             cmbProductStatus.SelectedIndex = selectedProduct.Status == "Active" ? 0 : 1;
 
@@ -226,7 +263,7 @@ namespace NexPOS
 
         private void ProductCodeAutoComplete_KeyUp(object sender, KeyEventArgs e)
         {
-            if (ShouldIgnoreAutoCompleteKey(e.Key) || isAutoCompleteChanging)
+            if (ShouldIgnoreAutoCompleteKey(e.Key) || isAutoCompleteChanging || editingProductID > 0)
             {
                 return;
             }
@@ -258,7 +295,7 @@ namespace NexPOS
 
         private void ProductNameAutoComplete_KeyUp(object sender, KeyEventArgs e)
         {
-            if (ShouldIgnoreAutoCompleteKey(e.Key) || isAutoCompleteChanging)
+            if (ShouldIgnoreAutoCompleteKey(e.Key) || isAutoCompleteChanging || editingProductID > 0)
             {
                 return;
             }
@@ -382,7 +419,7 @@ namespace NexPOS
 
         private void ProductCodeSuggestion_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (isAutoCompleteChanging)
+            if (isAutoCompleteChanging || editingProductID > 0)
             {
                 return;
             }
@@ -399,7 +436,7 @@ namespace NexPOS
 
         private void ProductNameSuggestion_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (isAutoCompleteChanging)
+            if (isAutoCompleteChanging || editingProductID > 0)
             {
                 return;
             }
@@ -434,26 +471,21 @@ namespace NexPOS
                     return;
                 }
 
-                editingProductID = product.ProductID;
+                editingProductID = 0;
 
-                txtModalTitle.Text = "Edit Product";
-                btnSaveProduct.Content = "Update Product";
+                txtModalTitle.Text = "Add Stock Batch";
+                btnSaveProduct.Content = "Add Batch";
+
+                txtStockQty.IsEnabled = true;
+                dpExpirationDate.IsEnabled = true;
 
                 SetEditableComboBoxText(txtProductCode, product.ProductCode);
                 SetEditableComboBoxText(txtProductName, product.ProductName);
 
                 txtUnitPrice.Text = product.UnitPrice.ToString("0.00");
-                txtStockQty.Text = product.StockQuantity.ToString();
+                txtStockQty.Text = "";
                 txtReorderLevel.Text = product.ReorderLevel.ToString();
-
-                if (product.ExpirationDate.HasValue)
-                {
-                    dpExpirationDate.SelectedDate = product.ExpirationDate.Value;
-                }
-                else
-                {
-                    dpExpirationDate.SelectedDate = null;
-                }
+                dpExpirationDate.SelectedDate = DateTime.Today;
 
                 cmbProductStatus.SelectedIndex = product.Status == "Active" ? 0 : 1;
 
@@ -476,13 +508,108 @@ namespace NexPOS
             }
         }
 
+        private string GetBatchStatus(DateTime expirationDate)
+        {
+            if (expirationDate.Date < DateTime.Today)
+            {
+                return "Expired";
+            }
+
+            return "Active";
+        }
+
+        private void InsertOrUpdateProductBatch(
+            NexPOSDataDataContext db,
+            int productID,
+            int stockQty,
+            DateTime expirationDate)
+        {
+            DateTime cleanExpirationDate = expirationDate.Date;
+            string batchStatus = GetBatchStatus(cleanExpirationDate);
+
+            var existingBatch = db.tbl_ProductBatches
+                .FirstOrDefault(b =>
+                    b.ProductID == productID &&
+                    b.ExpirationDate == cleanExpirationDate &&
+                    b.Status == batchStatus);
+
+            if (existingBatch != null)
+            {
+                existingBatch.StockQuantity += stockQty;
+                existingBatch.DateReceived = DateTime.Now;
+            }
+            else
+            {
+                tbl_ProductBatch newBatch = new tbl_ProductBatch();
+
+                newBatch.ProductID = productID;
+                newBatch.StockQuantity = stockQty;
+                newBatch.ExpirationDate = cleanExpirationDate;
+                newBatch.DateReceived = DateTime.Now;
+                newBatch.Status = batchStatus;
+
+                db.tbl_ProductBatches.InsertOnSubmit(newBatch);
+            }
+        }
+
+        private void RefreshAllProductSummaries(NexPOSDataDataContext db)
+        {
+            var productIDs = db.tbl_Products
+                .Select(p => p.ProductID)
+                .ToList();
+
+            foreach (int productID in productIDs)
+            {
+                SyncProductStockSummary(db, productID);
+            }
+        }
+
+        private void SyncProductStockSummary(NexPOSDataDataContext db, int productID)
+        {
+            var product = db.tbl_Products
+                .FirstOrDefault(p => p.ProductID == productID);
+
+            if (product == null)
+            {
+                return;
+            }
+
+            var productBatches = db.tbl_ProductBatches
+                .Where(b => b.ProductID == productID)
+                .ToList();
+
+            foreach (var batch in productBatches)
+            {
+                if (batch.ExpirationDate < DateTime.Today && batch.Status == "Active")
+                {
+                    batch.Status = "Expired";
+                }
+            }
+
+            var activeBatches = productBatches
+                .Where(b =>
+                    b.Status == "Active" &&
+                    b.StockQuantity > 0 &&
+                    b.ExpirationDate >= DateTime.Today)
+                .ToList();
+
+            if (activeBatches.Count == 0)
+            {
+                product.StockQuantity = 0;
+                product.ExpirationDate = null;
+                return;
+            }
+
+            product.StockQuantity = activeBatches.Sum(b => b.StockQuantity);
+            product.ExpirationDate = activeBatches.Min(b => b.ExpirationDate);
+        }
+
         private void SaveProduct_Click(object sender, RoutedEventArgs e)
         {
             string productCode = txtProductCode.Text.Trim();
             string productName = txtProductName.Text.Trim();
 
             decimal unitPrice;
-            int stockQty;
             int reorderLevel;
 
             if (productCode == "")
@@ -503,27 +630,21 @@ namespace NexPOS
                 return;
             }
 
+            if (cmbProductStatus.SelectedItem == null)
+            {
+                MessageBox.Show("Status is required.");
+                return;
+            }
+
             if (!decimal.TryParse(txtUnitPrice.Text, out unitPrice))
             {
                 MessageBox.Show("Unit price must be a number.");
                 return;
             }
 
-            if (!int.TryParse(txtStockQty.Text, out stockQty))
-            {
-                MessageBox.Show("Stock quantity must be a number.");
-                return;
-            }
-
             if (!int.TryParse(txtReorderLevel.Text, out reorderLevel))
             {
                 MessageBox.Show("Reorder level must be a number.");
-                return;
-            }
-
-            if (dpExpirationDate.SelectedDate == null)
-            {
-                MessageBox.Show("Expiration date is required.");
                 return;
             }
 
@@ -536,43 +657,23 @@ namespace NexPOS
             }
 
             ComboBoxItem selectedStatusItem = cmbProductStatus.SelectedItem as ComboBoxItem;
-            string status = selectedStatusItem.Content.ToString();
+            string productStatus = selectedStatusItem.Content.ToString();
 
             using (NexPOSDataDataContext db = new NexPOSDataDataContext())
             {
-                bool codeExists = db.tbl_Products.Any(p =>
-                    p.ProductCode.ToLower() == productCode.ToLower() &&
-                    p.ProductID != editingProductID
-                );
-
-                if (codeExists)
+                if (editingProductID > 0)
                 {
-                    MessageBox.Show("Product code already exists.");
-                    return;
-                }
+                    bool duplicateCode = db.tbl_Products.Any(p =>
+                        p.ProductCode.ToLower() == productCode.ToLower() &&
+                        p.ProductID != editingProductID
+                    );
 
-                if (editingProductID == 0)
-                {
-                    tbl_Product newProduct = new tbl_Product();
+                    if (duplicateCode)
+                    {
+                        MessageBox.Show("Product code already exists.");
+                        return;
+                    }
 
-                    newProduct.ProductCode = productCode;
-                    newProduct.ProductName = productName;
-                    newProduct.CategoryID = selectedCategory.CategoryID;
-                    newProduct.UnitPrice = unitPrice;
-                    newProduct.StockQuantity = stockQty;
-                    newProduct.ExpirationDate = dpExpirationDate.SelectedDate.Value;
-                    newProduct.ReorderLevel = reorderLevel;
-                    newProduct.Status = status;
-
-                    db.tbl_Products.InsertOnSubmit(newProduct);
-                    db.SubmitChanges();
-
-                    RefreshDashboard();
-
-                    MessageBox.Show("Product added successfully.");
-                }
-                else
-                {
                     var productToUpdate = db.tbl_Products
                         .FirstOrDefault(p => p.ProductID == editingProductID);
 
@@ -586,23 +687,349 @@ namespace NexPOS
                     productToUpdate.ProductName = productName;
                     productToUpdate.CategoryID = selectedCategory.CategoryID;
                     productToUpdate.UnitPrice = unitPrice;
-                    productToUpdate.StockQuantity = stockQty;
-                    productToUpdate.ExpirationDate = dpExpirationDate.SelectedDate.Value;
                     productToUpdate.ReorderLevel = reorderLevel;
-                    productToUpdate.Status = status;
+                    productToUpdate.Status = productStatus;
+
+                    SyncProductStockSummary(db, productToUpdate.ProductID);
 
                     db.SubmitChanges();
 
                     RefreshDashboard();
 
-                    MessageBox.Show("Product updated successfully.");
+                    MessageBox.Show("Product information updated successfully.");
+                }
+                else
+                {
+                    int stockQty;
+
+                    if (!int.TryParse(txtStockQty.Text, out stockQty))
+                    {
+                        MessageBox.Show("Stock quantity must be a number.");
+                        return;
+                    }
+
+                    if (stockQty <= 0)
+                    {
+                        MessageBox.Show("Stock quantity must be greater than zero.");
+                        return;
+                    }
+
+                    if (dpExpirationDate.SelectedDate == null)
+                    {
+                        MessageBox.Show("Expiration date is required.");
+                        return;
+                    }
+
+                    DateTime expirationDate = dpExpirationDate.SelectedDate.Value.Date;
+
+                    var existingProduct = db.tbl_Products
+                        .FirstOrDefault(p => p.ProductCode.ToLower() == productCode.ToLower());
+
+                    if (existingProduct == null)
+                    {
+                        tbl_Product newProduct = new tbl_Product();
+
+                        newProduct.ProductCode = productCode;
+                        newProduct.ProductName = productName;
+                        newProduct.CategoryID = selectedCategory.CategoryID;
+                        newProduct.UnitPrice = unitPrice;
+                        newProduct.StockQuantity = 0;
+                        newProduct.ExpirationDate = null;
+                        newProduct.ReorderLevel = reorderLevel;
+                        newProduct.Status = productStatus;
+
+                        db.tbl_Products.InsertOnSubmit(newProduct);
+                        db.SubmitChanges();
+
+                        InsertOrUpdateProductBatch(
+                            db,
+                            newProduct.ProductID,
+                            stockQty,
+                            expirationDate);
+
+                        SyncProductStockSummary(db, newProduct.ProductID);
+
+                        db.SubmitChanges();
+
+                        RefreshDashboard();
+
+                        if (expirationDate < DateTime.Today)
+                        {
+                            MessageBox.Show("Product added, but the batch is marked as expired.");
+                        }
+                        else
+                        {
+                            MessageBox.Show("Product and first batch added successfully.");
+                        }
+                    }
+                    else
+                    {
+                        InsertOrUpdateProductBatch(
+                            db,
+                            existingProduct.ProductID,
+                            stockQty,
+                            expirationDate);
+
+                        SyncProductStockSummary(db, existingProduct.ProductID);
+
+                        db.SubmitChanges();
+
+                        RefreshDashboard();
+
+                        if (expirationDate < DateTime.Today)
+                        {
+                            MessageBox.Show("Expired batch added for existing product.");
+                        }
+                        else
+                        {
+                            MessageBox.Show("New batch added for existing product.");
+                        }
+                    }
                 }
             }
 
             ProductOverlay.Visibility = Visibility.Collapsed;
             editingProductID = 0;
 
+            txtStockQty.IsEnabled = true;
+            dpExpirationDate.IsEnabled = true;
+
             LoadFilters();
+            RefreshInventory();
+        }
+
+        private void ViewBatches_Click(object sender, RoutedEventArgs e)
+        {
+            Button button = sender as Button;
+
+            if (button == null)
+            {
+                return;
+            }
+
+            InventoryProductRow selectedProduct = button.DataContext as InventoryProductRow;
+
+            if (selectedProduct == null)
+            {
+                return;
+            }
+
+            currentBatchProductID = selectedProduct.ProductID;
+            txtBatchModalTitle.Text = selectedProduct.ProductCode + " - " + selectedProduct.ProductName + " Batches";
+
+            ClearBatchEditor();
+            LoadBatches(currentBatchProductID);
+
+            BatchOverlay.Visibility = Visibility.Visible;
+        }
+
+        private void LoadBatches(int productID)
+        {
+            using (NexPOSDataDataContext db = new NexPOSDataDataContext())
+            {
+                SyncProductStockSummary(db, productID);
+                db.SubmitChanges();
+
+                var batches = db.tbl_ProductBatches
+                    .Where(b => b.ProductID == productID)
+                    .OrderBy(b => b.ExpirationDate)
+                    .Select(b => new BatchRow
+                    {
+                        BatchID = b.BatchID,
+                        ProductID = b.ProductID,
+                        StockQuantity = b.StockQuantity,
+                        ExpirationDate = b.ExpirationDate,
+                        DateReceived = b.DateReceived,
+                        Status = b.Status
+                    })
+                    .ToList();
+
+                gridBatches.ItemsSource = null;
+                gridBatches.ItemsSource = batches;
+            }
+        }
+
+        private void EditBatch_Click(object sender, RoutedEventArgs e)
+        {
+            Button button = sender as Button;
+
+            if (button == null)
+            {
+                return;
+            }
+
+            BatchRow selectedBatch = button.DataContext as BatchRow;
+
+            if (selectedBatch == null)
+            {
+                return;
+            }
+
+            editingBatchID = selectedBatch.BatchID;
+
+            txtBatchQuantity.Text = selectedBatch.StockQuantity.ToString();
+            dpBatchExpiration.SelectedDate = selectedBatch.ExpirationDate;
+
+            if (selectedBatch.Status == "Active")
+            {
+                cmbBatchStatus.SelectedIndex = 0;
+            }
+            else if (selectedBatch.Status == "Expired")
+            {
+                cmbBatchStatus.SelectedIndex = 1;
+            }
+            else
+            {
+                cmbBatchStatus.SelectedIndex = 2;
+            }
+        }
+
+        private void UpdateBatch_Click(object sender, RoutedEventArgs e)
+        {
+            int quantity;
+
+            if (editingBatchID == 0)
+            {
+                MessageBox.Show("Please select a batch to edit.");
+                return;
+            }
+
+            if (!int.TryParse(txtBatchQuantity.Text, out quantity))
+            {
+                MessageBox.Show("Quantity must be a number.");
+                return;
+            }
+
+            if (quantity < 0)
+            {
+                MessageBox.Show("Quantity cannot be negative.");
+                return;
+            }
+
+            if (dpBatchExpiration.SelectedDate == null)
+            {
+                MessageBox.Show("Expiration date is required.");
+                return;
+            }
+
+            if (cmbBatchStatus.SelectedItem == null)
+            {
+                MessageBox.Show("Status is required.");
+                return;
+            }
+
+            DateTime expirationDate = dpBatchExpiration.SelectedDate.Value.Date;
+
+            ComboBoxItem statusItem = cmbBatchStatus.SelectedItem as ComboBoxItem;
+            string status = statusItem.Content.ToString();
+
+            if (expirationDate < DateTime.Today)
+            {
+                status = "Expired";
+            }
+
+            using (NexPOSDataDataContext db = new NexPOSDataDataContext())
+            {
+                var batchToUpdate = db.tbl_ProductBatches
+                    .FirstOrDefault(b => b.BatchID == editingBatchID);
+
+                if (batchToUpdate == null)
+                {
+                    MessageBox.Show("Batch not found.");
+                    return;
+                }
+
+                int productID = batchToUpdate.ProductID;
+
+                batchToUpdate.StockQuantity = quantity;
+                batchToUpdate.ExpirationDate = expirationDate;
+                batchToUpdate.Status = status;
+
+                SyncProductStockSummary(db, productID);
+
+                db.SubmitChanges();
+
+                RefreshDashboard();
+
+                LoadBatches(productID);
+                RefreshInventory();
+                ClearBatchEditor();
+
+                MessageBox.Show("Batch updated successfully.");
+            }
+        }
+
+        private void DeleteBatch_Click(object sender, RoutedEventArgs e)
+        {
+            Button button = sender as Button;
+
+            if (button == null)
+            {
+                return;
+            }
+
+            BatchRow selectedBatch = button.DataContext as BatchRow;
+
+            if (selectedBatch == null)
+            {
+                return;
+            }
+
+            MessageBoxResult result = MessageBox.Show(
+                "Are you sure you want to delete this batch?",
+                "Delete Batch",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (result != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            using (NexPOSDataDataContext db = new NexPOSDataDataContext())
+            {
+                var batchToDelete = db.tbl_ProductBatches
+                    .FirstOrDefault(b => b.BatchID == selectedBatch.BatchID);
+
+                if (batchToDelete == null)
+                {
+                    MessageBox.Show("Batch not found.");
+                    return;
+                }
+
+                int productID = batchToDelete.ProductID;
+
+                db.tbl_ProductBatches.DeleteOnSubmit(batchToDelete);
+                db.SubmitChanges();
+
+                SyncProductStockSummary(db, productID);
+                db.SubmitChanges();
+
+                RefreshDashboard();
+
+                LoadBatches(productID);
+                RefreshInventory();
+                ClearBatchEditor();
+
+                MessageBox.Show("Batch deleted successfully.");
+            }
+        }
+
+        private void ClearBatchEditor()
+        {
+            editingBatchID = 0;
+
+            txtBatchQuantity.Text = "";
+            dpBatchExpiration.SelectedDate = null;
+            cmbBatchStatus.SelectedIndex = 0;
+        }
+
+        private void CloseBatchOverlay_Click(object sender, RoutedEventArgs e)
+        {
+            BatchOverlay.Visibility = Visibility.Collapsed;
+            currentBatchProductID = 0;
+            ClearBatchEditor();
+
             RefreshInventory();
         }
 
@@ -647,7 +1074,13 @@ namespace NexPOS
                         return;
                     }
 
+                    var batchesToDelete = db.tbl_ProductBatches
+                        .Where(b => b.ProductID == selectedProduct.ProductID)
+                        .ToList();
+
+                    db.tbl_ProductBatches.DeleteAllOnSubmit(batchesToDelete);
                     db.tbl_Products.DeleteOnSubmit(productToDelete);
+
                     db.SubmitChanges();
 
                     RefreshDashboard();
@@ -673,6 +1106,9 @@ namespace NexPOS
         {
             ProductOverlay.Visibility = Visibility.Collapsed;
             editingProductID = 0;
+
+            txtStockQty.IsEnabled = true;
+            dpExpirationDate.IsEnabled = true;
         }
     }
 }

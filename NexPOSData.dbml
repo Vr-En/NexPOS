@@ -19,6 +19,7 @@
       <Column Name="ReorderLevel" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
       <Column Name="Status" Type="System.String" DbType="NVarChar(20) NOT NULL" CanBeNull="false" />
       <Association Name="tbl_Product_tbl_Transactions_Item" Member="tbl_Transactions_Items" ThisKey="ProductID" OtherKey="ProductID" Type="tbl_Transactions_Item" />
+      <Association Name="tbl_Product_tbl_ProductBatch" Member="tbl_ProductBatches" ThisKey="ProductID" OtherKey="ProductID" Type="tbl_ProductBatch" />
       <Association Name="tbl_Category_tbl_Product" Member="tbl_Category" ThisKey="CategoryID" OtherKey="CategoryID" Type="tbl_Category" IsForeignKey="true" />
     </Type>
   </Table>
@@ -53,6 +54,17 @@
       <Column Name="Username" Type="System.String" DbType="NVarChar(50) NOT NULL" CanBeNull="false" />
       <Column Name="Password" Type="System.String" DbType="NVarChar(100) NOT NULL" CanBeNull="false" />
       <Association Name="tbl_User_tbl_Transaction" Member="tbl_Transactions" ThisKey="UserID" OtherKey="CashierID" Type="tbl_Transaction" />
+    </Type>
+  </Table>
+  <Table Name="dbo.tbl_ProductBatches" Member="tbl_ProductBatches">
+    <Type Name="tbl_ProductBatch">
+      <Column Name="BatchID" Type="System.Int32" DbType="Int NOT NULL IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="ProductID" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="StockQuantity" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="ExpirationDate" Type="System.DateTime" DbType="Date NOT NULL" CanBeNull="false" />
+      <Column Name="DateReceived" Type="System.DateTime" DbType="DateTime NOT NULL" CanBeNull="false" />
+      <Column Name="Status" Type="System.String" DbType="NVarChar(20) NOT NULL" CanBeNull="false" />
+      <Association Name="tbl_Product_tbl_ProductBatch" Member="tbl_Product" ThisKey="ProductID" OtherKey="ProductID" Type="tbl_Product" IsForeignKey="true" />
     </Type>
   </Table>
 </Database>

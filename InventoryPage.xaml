@@ -170,37 +170,18 @@
 
                             <DataGridTextColumn Header="CODE"
                                                 Binding="{Binding ProductCode}"
-                                                Width="0.8*"/>
+                                                Width="0.9*"/>
 
                             <DataGridTextColumn Header="PRODUCT"
                                                 Binding="{Binding ProductName}"
-                                                Width="1.8*">
-                                <DataGridTextColumn.ElementStyle>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="FontWeight" Value="SemiBold"/>
-                                        <Setter Property="VerticalAlignment" Value="Center"/>
-                                        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
-                                    </Style>
-                                </DataGridTextColumn.ElementStyle>
-                            </DataGridTextColumn>
-
-                            <DataGridTextColumn Header="CATEGORY"
-                                                Binding="{Binding CategoryName}"
-                                                Width="1.2*"/>
+                                                Width="2.4*"/>
 
                             <DataGridTextColumn Header="PRICE"
                                                 Binding="{Binding PriceText}"
-                                                Width="0.8*">
-                                <DataGridTextColumn.ElementStyle>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="FontWeight" Value="SemiBold"/>
-                                        <Setter Property="VerticalAlignment" Value="Center"/>
-                                    </Style>
-                                </DataGridTextColumn.ElementStyle>
-                            </DataGridTextColumn>
+                                                Width="1*"/>
 
                             <!-- STOCK -->
-                            <DataGridTemplateColumn Header="STOCK" Width="0.8*">
+                            <DataGridTemplateColumn Header="STOCK" Width="1*">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Border CornerRadius="10"
@@ -249,54 +230,15 @@
 
                             <DataGridTextColumn Header="EXPIRATION"
                                                 Binding="{Binding ExpirationText}"
-                                                Width="1*"/>
-
-                            <!-- STATUS -->
-                            <DataGridTemplateColumn Header="STATUS" Width="0.8*">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <Border CornerRadius="10"
-                                                Padding="8,3"
-                                                Height="24"
-                                                HorizontalAlignment="Left"
-                                                VerticalAlignment="Center">
-                                            <Border.Style>
-                                                <Style TargetType="Border">
-                                                    <Setter Property="Background" Value="#DCFCE7"/>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding Status}" Value="Inactive">
-                                                            <Setter Property="Background" Value="#FEE2E2"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Border.Style>
-
-                                            <TextBlock Text="{Binding Status}"
-                                                       FontSize="12"
-                                                       FontWeight="SemiBold"
-                                                       VerticalAlignment="Center">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Setter Property="Foreground" Value="#15803D"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding Status}" Value="Inactive">
-                                                                <Setter Property="Foreground" Value="#DC2626"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
-                                        </Border>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
+                                                Width="1.3*"/>
 
                             <!-- ACTIONS -->
-                            <DataGridTemplateColumn Header="ACTIONS" Width="0.8*">
+                            <DataGridTemplateColumn Header="ACTIONS" Width="1.2*">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal"
                                                     VerticalAlignment="Center">
+
                                             <Button Content="✎"
                                                     Width="26"
                                                     Height="26"
@@ -307,6 +249,18 @@
                                                     Cursor="Hand"
                                                     Margin="0,0,8,0"
                                                     Click="EditProduct_Click"/>
+
+                                            <Button Content="📦"
+                                                    Width="30"
+                                                    Height="26"
+                                                    Foreground="#00A651"
+                                                    Background="Transparent"
+                                                    BorderThickness="0"
+                                                    FontSize="14"
+                                                    Cursor="Hand"
+                                                    Margin="0,0,8,0"
+                                                    ToolTip="View batches"
+                                                    Click="ViewBatches_Click"/>
 
                                             <Button Content="🗑"
                                                     Width="26"
@@ -445,6 +399,175 @@
                         </Grid>
                     </StackPanel>
                 </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- BATCH MANAGEMENT MODAL -->
+        <Grid x:Name="BatchOverlay"
+              Background="#80000000"
+              Visibility="Collapsed">
+
+            <Border Width="760"
+                    Background="White"
+                    CornerRadius="14"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="320"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Margin="24,20,24,18">
+                        <StackPanel>
+                            <TextBlock x:Name="txtBatchModalTitle"
+                                       Text="Product Batches"
+                                       FontSize="20"
+                                       FontWeight="Bold"
+                                       Foreground="#1F2937"/>
+
+                            <TextBlock Text="Edit quantity, expiration date, or batch status."
+                                       FontSize="13"
+                                       Foreground="#64748B"
+                                       Margin="0,4,0,0"/>
+                        </StackPanel>
+
+                        <Button Content="×"
+                                Width="30"
+                                Height="30"
+                                HorizontalAlignment="Right"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                FontSize="22"
+                                Foreground="#64748B"
+                                Click="CloseBatchOverlay_Click"/>
+                    </Grid>
+
+                    <DataGrid x:Name="gridBatches"
+                              Grid.Row="1"
+                              Margin="24,0,24,0"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              IsReadOnly="True"
+                              RowHeight="42"
+                              HeadersVisibility="Column"
+                              GridLinesVisibility="None"
+                              BorderThickness="1"
+                              BorderBrush="#E5E7EB">
+
+                        <DataGrid.Columns>
+
+                            <DataGridTextColumn Header="QUANTITY"
+                                                Binding="{Binding StockQuantity}"
+                                                Width="1*"/>
+
+                            <DataGridTextColumn Header="EXPIRATION"
+                                                Binding="{Binding ExpirationText}"
+                                                Width="1.2*"/>
+
+                            <DataGridTextColumn Header="STATUS"
+                                                Binding="{Binding Status}"
+                                                Width="1*"/>
+
+                            <DataGridTextColumn Header="RECEIVED"
+                                                Binding="{Binding DateReceivedText}"
+                                                Width="1.2*"/>
+
+                            <DataGridTemplateColumn Header="ACTION" Width="1.3*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Button Content="Edit"
+                                                    Width="55"
+                                                    Height="26"
+                                                    Background="#EFF6FF"
+                                                    Foreground="#2563EB"
+                                                    BorderThickness="0"
+                                                    FontWeight="SemiBold"
+                                                    Margin="0,0,8,0"
+                                                    Click="EditBatch_Click"/>
+
+                                            <Button Content="Delete"
+                                                    Width="60"
+                                                    Height="26"
+                                                    Background="#FEE2E2"
+                                                    Foreground="#DC2626"
+                                                    BorderThickness="0"
+                                                    FontWeight="SemiBold"
+                                                    Click="DeleteBatch_Click"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <Border Grid.Row="2"
+                            Margin="24"
+                            Background="#F8FAFC"
+                            CornerRadius="12"
+                            Padding="16">
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="170"/>
+                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="QUANTITY"
+                                           FontWeight="SemiBold"
+                                           Foreground="#475569"
+                                           FontSize="12"/>
+
+                                <TextBox x:Name="txtBatchQuantity"
+                                         Height="36"
+                                         Margin="0,5,10,0"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="EXPIRATION"
+                                           FontWeight="SemiBold"
+                                           Foreground="#475569"
+                                           FontSize="12"/>
+
+                                <DatePicker x:Name="dpBatchExpiration"
+                                            Height="36"
+                                            Margin="0,5,10,0"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="STATUS"
+                                           FontWeight="SemiBold"
+                                           Foreground="#475569"
+                                           FontSize="12"/>
+
+                                <ComboBox x:Name="cmbBatchStatus"
+                                          Height="36"
+                                          Margin="0,5,10,0">
+                                    <ComboBoxItem Content="Active"/>
+                                    <ComboBoxItem Content="Expired"/>
+                                    <ComboBoxItem Content="Inactive"/>
+                                </ComboBox>
+                            </StackPanel>
+
+                            <Button Grid.Column="3"
+                                    Content="Update Batch"
+                                    Height="38"
+                                    VerticalAlignment="Bottom"
+                                    Background="#00A651"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    FontWeight="Bold"
+                                    Click="UpdateBatch_Click"/>
+                        </Grid>
+                    </Border>
+                </Grid>
             </Border>
         </Grid>
 
